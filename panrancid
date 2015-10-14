@@ -38,8 +38,8 @@ my $shell_command = "/var/lib/rancid/bin/panlogin -t $timeout -c \"$text_cmd_lis
 if ($debug) {
     print(STDERR $shell_command);
 }
+
 open(INPUT,$shell_command) || die "panlogin run failed for $host: $!\n";
-print("#RANCID-CONTENT-TYPE: paloalto\n");
 
 my $start_processing = 0;
 while (<INPUT>) {
@@ -47,6 +47,7 @@ while (<INPUT>) {
     # This may match multiple line outputs but it will also serve
     # to squelch command output that we don't want.
     if (/$host.+>/i) {
+        print("#RANCID-CONTENT-TYPE: paloalto\n");
         $start_processing = 1;
         next;
     }
@@ -62,6 +63,11 @@ while (<INPUT>) {
     if($start_processing) {
         print($_);
     }
+}
+# If we never processed input something is wrong...
+if ($start_processing == 0) {
+    print(STDERR "Check your .cloginrc file for the correct permissions?");
+    exit(1);
 }
 close(INPUT);
 close(OUTPUT);

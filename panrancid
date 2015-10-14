@@ -7,6 +7,7 @@
 #
 # usage: panrancid [-d] [hostname]
 #
+use Socket; # For hostname lookup
 use Getopt::Std;
 getopts('d');
 
@@ -19,8 +20,7 @@ if (!defined $host) {
     print(STDERR "A hostname is required. \nUsage: panrancid [-d] example-fw.corp.domain\n");
     exit(1);
 }
-
-# TODO: Check DNS resolution of the host before passing to panlogin?
+gethostbyname($host) or die "Can't resolve $host - check your DNS settings?.\n";
 
 open(OUTPUT,">$host.new") || die "Can't open $host.new for writing: $!\n";
 select(OUTPUT);

@@ -43,7 +43,7 @@ print("#RANCID-CONTENT-TYPE: paloalto\n");
 
 my $start_processing = 0;
 while (<INPUT>) {
-    # Wait until we see a prompt to being processing.
+    # Wait until we see a prompt to begin processing.
     # This may match multiple line outputs but it will also serve
     # to squelch command output that we don't want.
     if (/$host.+>/i) {

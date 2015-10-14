@@ -66,7 +66,8 @@ while (<INPUT>) {
 }
 # If we never processed input something is wrong...
 if ($start_processing == 0) {
-    print(STDERR "Check your .cloginrc file for the correct permissions?");
+    print(STDERR "Received no output from the panlogin process.\n");
+    print(STDERR "Check your .cloginrc file for the correct permissions?\n");
     exit(1);
 }
 close(INPUT);

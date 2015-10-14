@@ -1,0 +1,86 @@
+#! /usr/bin/perl
+##
+## $Id: panrancid 2015-10-13 mitch@kci.net
+##
+## rancid 2.3.2a7
+## Copyright (C) 1997-2006 by Terrapin Communications, Inc.
+## All rights reserved.
+##
+## This software may be freely copied, modified and redistributed
+## without fee for non-commerical purposes provided that this license
+## remains intact and unmodified with any RANCID distribution.
+##
+## There is no warranty or other guarantee of fitness of this software.
+## It is provided solely "as is".  The author(s) disclaim(s) all
+## responsibility and liability with respect to this software's usage
+## or its effect upon hardware, computer systems, other software, or
+## anything else.
+##
+## Except where noted otherwise, rancid was written by and is maintained by
+## Henry Kilmer, John Heasley, Andrew Partan, Pete Whiting, and Austin Schutz.
+##
+#
+# Amazingly hacked version of Hank's rancid - this one tries to
+# deal with Palo Altos
+#
+#  RANCID - Really Awesome New Cisco confIg Differ
+#
+# usage: panrancid [-d] [hostname]
+#
+use Getopt::Std;
+getopts('d');
+
+my $debug = $opt_d;
+my $host = $ARGV[0];
+my $timeout = 90;
+
+# Quick sanity check that all necessary arguments are supplied.
+if (!defined $host) {
+    print(STDERR "A hostname is required. \nUsage: panrancid [-d] example-fw.corp.domain\n");
+    exit(1);
+}
+
+# TODO: Check DNS resolution of the host before passing to panlogin?
+open(OUTPUT,">$host.new") || die "Can't open $host.new for writing: $!\n";
+select(OUTPUT);
+
+# The two commands we want to run against PaloAlto Firewalls.
+# Please add more commands as you see fit.
+my @commandtable = (
+    'show system info',
+    'show config running',
+);
+
+# Convert our commands into a single string for passing to panlogin
+my $text_cmd_list = join(";", values(@commandtable));
+my $shell_command = "/var/lib/rancid/bin/panlogin -t $timeout -c \"$text_cmd_list\" $host </dev/null |";
+if ($debug) {
+    print(STDERR $shell_command);
+}
+open(INPUT,$shell_command) || die "panlogin run failed for $host: $!\n";
+print("#RANCID-CONTENT-TYPE: paloalto\n");
+
+my $start_processing = 0;
+while (<INPUT>) {
+    # Wait until we see a prompt to being processing.
+    # This may match multiple line outputs but it will also serve
+    # to squelch command output that we don't want.
+    if (/$host.+>/i) {
+        $start_processing = 1;
+        next;
+    }
+    # Skip blank lines.
+    if (/^\r$/) {
+        next;
+    }
+    # Skip the connection closed message.
+    if (/Connection to $host closed./) {
+        next;
+    }
+    # Output to our open file stream.
+    if($start_processing) {
+        print($_);
+    }
+}
+close(INPUT);
+close(OUTPUT);
